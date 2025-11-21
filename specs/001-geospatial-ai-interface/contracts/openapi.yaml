@@ -1,0 +1,45 @@
+openapi: 3.0.0
+info:
+  title: GeoMind AI Chat API
+  version: 1.0.0
+  description: API for interacting with the GeoMind AI chat interface.
+
+paths:
+  /chat:
+    post:
+      summary: Send a message to the chat API
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  description: The natural language query from the user.
+                session_id:
+                  type: string
+                  description: A unique identifier for the user's session.
+      responses:
+        '200':
+          description: A successful response from the AI.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  response_type:
+                    type: string
+                    enum: [data, clarification, error, sql_approval]
+                    description: The type of response.
+                  data:
+                    type: object
+                    description: The data payload, which varies based on the response_type.
+                  session_id:
+                    type: string
+                    description: The session ID.
+        '400':
+          description: Bad request, e.g., invalid input.
+        '500':
+          description: Internal server error.

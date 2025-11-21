@@ -1,11 +1,14 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 import logging
+from src.api.chat import router as chat_router
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI()
+
+app.include_router(chat_router)
 
 @app.middleware("http")
 async def log_requests(request: Request, call_next):

@@ -17,11 +17,11 @@ description: "Task list for implementing the GeoMind AI Core feature."
 
 **Purpose**: Initialize project structure and basic tooling for both frontend and backend.
 
-- [ ] T001 Create project repository structure (`frontend/src/`, `backend/src/`, `tests/`)
-- [ ] T002 Initialize Python backend with FastAPI and install dependencies (`backend/pyproject.toml`)
-- [ ] T003 [P] Initialize React frontend with Next.js and Tailwind CSS (`frontend/package.json`)
-- [ ] T004 [P] Configure linting (ESLint/Flake8) and code formatting (Prettier/Black) in both projects.
-- [ ] T005 [P] Setup Docker development environment and Compose files (`docker-compose.yml`)
+- [X] T001 Create project repository structure (`frontend/src/`, `backend/src/`, `tests/`)
+- [X] T002 Initialize Python backend with FastAPI and install dependencies (`backend/pyproject.toml`)
+- [X] T003 [P] Initialize React frontend with Next.js and Tailwind CSS (`frontend/package.json`)
+- [X] T004 [P] Configure linting (ESLint/Flake8) and code formatting (Prettier/Black) in both projects.
+- [X] T005 [P] Setup Docker development environment and Compose files (`docker-compose.yml`)
 
 ---
 
@@ -29,11 +29,11 @@ description: "Task list for implementing the GeoMind AI Core feature."
 
 **Purpose**: Core infrastructure required before any user story implementation.
 
-- [ ] T006 Implement secure configuration management for secrets (e.g., database credentials, API keys) (`backend/src/config.py`)
-- [ ] T007 [P] Implement authentication and authorization framework using Auth0 (`backend/src/auth/`)
-- [ ] T008 [P] Setup API routing, middleware for logging and error handling (`backend/src/main.py`)
-- [ ] T009 Create base Pydantic models for API requests and responses (`backend/src/models/base.py`)
-- [ ] T010 Configure centralized logging with Loki/Grafana (`backend/src/utils/logger.py`)
+- [X] T006 Implement secure configuration management for secrets (e.g., database credentials, API keys) (`backend/src/config.py`)
+- [X] T007 [P] Implement authentication and authorization framework using Auth0 (`backend/src/auth/`)
+- [X] T008 [P] Setup API routing, middleware for logging and error handling (`backend/src/main.py`)
+- [X] T009 Create base Pydantic models for API requests and responses (`backend/src/models/base.py`)
+- [X] T010 Configure centralized logging with Loki/Grafana (`backend/src/utils/logger.py`)
 
 **Checkpoint**: Foundation ready – user stories can now be implemented independently.
 
@@ -47,8 +47,8 @@ description: "Task list for implementing the GeoMind AI Core feature."
 
 ### Implementation for User Story 1
 
-- [ ] T011 [P] [US1] Create Pydantic models for OpenWorks entities: Well, Seismic Survey, Log (`backend/src/models/openworks.py`)
-- [ ] T012 [US1] Implement the Schema/Ontology Engine to load and manage OpenWorks schema information (`backend/src/services/schema_engine.py`)
+- [X] T011 [P] [US1] Create Pydantic models for OpenWorks entities: Well, Seismic Survey, Log (`backend/src/models/openworks.py`)
+- [X] T012 [US1] Implement the Schema/Ontology Engine to load and manage OpenWorks schema information (`backend/src/services/schema_engine.py`)
 - [ ] T013 [US1] Implement the core AI Orchestrator service to interpret user queries using LangChain (`backend/src/services/ai_orchestrator.py`)
 - [ ] T014 [US1] Implement the SQL Safety Validator for read-only queries (`backend/src/services/sql_validator.py`)
 - [ ] T015 [US1] Implement the Oracle Data Gateway for executing queries (`backend/src/services/oracle_gateway.py`)

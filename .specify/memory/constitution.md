@@ -1,55 +1,203 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+# GeoMind AI Constitution
 
-## Core Principles
+## 1. Purpose
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+GeoMind AI exists to provide geoscientists, data managers, and reservoir engineers with a secure, intelligent, natural-language interface to Landmark OpenWorks (Oracle RDBMS). The system converts plain-English requests into validated SQL operations, enabling users to retrieve, analyze, and update subsurface data safely and efficiently.
+The platform must eliminate complexity, enforce data governance, and significantly speed up interaction with OpenWorks data.
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+## 2. Scope
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+GeoMind AI covers the following functional domains:
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+### 2.1 Natural-Language Understanding
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+- Interpret user queries expressed in plain English.
+- Detect user intent (search, query, update, insert, edit, metadata).
+- Map domain terms (wells, surveys, horizons, logs) to OpenWorks schema objects.
 
-### [PRINCIPLE_6_NAME]
+### 2.2 Schema-Aware SQL Generation
 
+- Convert validated user intent into executable SQL statements.
+- Use OpenWorks data model ontology for mapping.
+- Ensure SQL matches actual table/column names.
+- Never generate destructive schema-altering SQL.
 
-[PRINCIPLE__DESCRIPTION]
+### 2.3 Oracle Database Operations
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+- Read operations across OpenWorks schema.
+- Controlled write operations (update, insert, edit).
+- Secure parameter binding and strict validation.
+- Audit logging and traceability for all database changes.
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+### 2.4 User Interface & Interaction
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+- Conversational AI chat window.
+- Visualization of query results.
+- SQL preview and explanation before execution of any write operation.
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+### 2.5 Governance & Safety
 
-## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
+- Access control by user role.
+- Multi-step approval for sensitive write actions.
+- Full history of executed operations.
+- Guardrails preventing unsafe database changes.
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+## 3. Guiding Principles
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+### 3.1 Safety First
+
+Every AI-generated SQL operation must pass through validation layers:
+
+- Schema validation
+- Safety rules
+- Permission checks
+- User approval (for writes)
+
+No operation should risk corrupting OpenWorks data.
+
+### 3.2 Transparency
+
+- Always show the SQL that will be executed.
+- Explain the reasoning behind mappings and table selections.
+- Maintain clear logs of every executed action.
+
+### 3.3 Domain Intelligence
+
+The system must encode knowledge about:
+
+- OpenWorks schema and metadata
+- Well-header, surveys, curves, markers, seismic tables
+- Geoscience terminology and synonyms
+- Landmark data loading and QC conventions
+
+### 3.4 Performance & Scalability
+
+Architected for:
+
+- Large datasets (millions of rows)
+- High concurrency
+- Enterprise workloads
+- Stateless horizontal scaling
+
+### 3.5 Minimal Intrusion
+
+- No changes to OpenWorks software, only interaction through Oracle DB.
+- GeoMind AI sits as an external intelligence layer.
+
+## 4. Responsibilities of the AI
+
+The AI must:
+
+### 4.1 Understand Queries
+
+- Parse complex English questions.
+- Handle incomplete queries by asking clarifying questions.
+- Support both conversational and command-style inputs.
+
+### 4.2 Operate on Database Safely
+
+- Generate SQL aligned to schema.
+- Enforce read/write separation where applicable.
+- Reject any ambiguous or risky requests.
+
+### 4.3 Assist the User
+
+- Provide step-by-step guidance for operations.
+- Suggest potential data inconsistencies.
+- Recommend relevant tables or objects when unsure.
+- Offer learning prompts to the user.
+
+### 4.4 Maintain Truthfulness
+
+All answers must be grounded in:
+
+- Verified database results
+- Schema introspection
+- Embedded OpenWorks ontology
+- Retrieved documents (Data Dictionary, schemas)
+
+### 4.5 Improve Continuously
+
+- Learn from user queries and feedback (non-sensitive).
+- Optimize frequently used query paths.
+- Cache common objects for speed.
+
+## 5. Prohibited Actions
+
+GeoMind AI must never:
+
+- Produce DROP/TRUNCATE/ALTER TABLE statements.
+- Execute writes without explicit user approval.
+- Perform schema modifications.
+- Fabricate data that does not exist in the database.
+- Bypass user roles or permission levels.
+- Produce SQL that touches tables outside permitted OpenWorks schemas.
+
+## 6. System Architecture Principles
+
+### 6.1 Modular Services
+
+- AI Orchestrator
+- Oracle Data Gateway
+- Schema/Ontology Engine
+- SQL Safety Validator
+- Chat Application Backend
+
+### 6.2 Observability
+
+- All operations must be logged.
+- Errors tracked with alerts.
+- Usage analytics stored for optimization.
+
+### 6.3 Security
+
+- Enforced authentication.
+- Secure credential storage.
+- Oracle roles honored strictly.
+- Optional two-man approval for critical edits.
+
+## 7. User Experience Principles
+
+### 7.1 Conversational Simplicity
+
+- Users should feel like they are “talking to the database” in English.
+
+### 7.2 Rapid Feedback
+
+- Fast query responses.
+- Friendly explanations of results.
+
+### 7.3 Assisted Mode
+
+- Auto-suggestions for tables, fields, conditions.
+- Explanation of how the model interpreted the question.
+
+### 7.4 Professional Tone
+
+Responses must remain:
+
+- Technical
+- Concise
+- Objective
+- Aligned with geoscience domain expertise
+
+## 8. Success Metrics
+
+GeoMind AI is successful when:
+
+- Geoscientists can retrieve complex OpenWorks data without writing SQL.
+- Data managers trust the system for controlled updates.
+- Query execution time is significantly reduced.
+- Data quality improves due to structured workflows.
+- Adoption increases across subsurface teams.
+
+## 9. Evolution Roadmap
+
+Future-enabled capabilities include:
+
+- AI QC for well logs and survey data.
+- Automated data loading workflows.
+- Seismic data catalogue search.
+- Cross-domain knowledge extraction (OpenWorks + Petrel + OSDU).
+
+**Version**: 1.0.0 | **Ratified**: 2025-11-22 | **Last Amended**: 2025-11-22

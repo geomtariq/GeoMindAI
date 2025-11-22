@@ -1,15 +1,20 @@
 'use client';
 
 import { useState } from 'react';
+import ResultsTable from './ResultsTable';
+import SqlPreview from './SqlPreview';
 
 interface Message {
   text: string;
   sender: 'user' | 'ai';
+  data?: any;
 }
 
 export default function ChatWindow() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
+  const [results, setResults] = useState<any[]>([]);
+  const [sql, setSql] = useState('');
 
   const handleSend = async () => {
     if (!input.trim()) return;
@@ -18,35 +23,37 @@ export default function ChatWindow() {
     setMessages(newMessages);
     setInput('');
 
-    // TODO: Replace with actual API call to the backend service
-    // For now, we'll mock a response. In a real scenario, this would
-    // be a call to a Next.js API route that proxies to the Python backend.
-    const mockResponse = {
-        response_type: 'data',
-        data: {
-            results: [
-                { 'well_name': 'Poseidon-1', 'status': 'completed' },
-                { 'well_name': 'Poseidon-2', 'status': 'drilling' },
-            ],
-            sql: "SELECT well_name, status FROM wells WHERE field = 'Poseidon'"
-        },
-        session_id: '123'
-    };
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: input, session_id: '123' }), // Placeholder session_id
+    });
+    const data = await response.json();
 
-    setMessages([...newMessages, { text: JSON.stringify(mockResponse, null, 2), sender: 'ai' }]);
+    if (data.response_type === 'data') {
+      setResults(data.data.results);
+      setSql(data.data.sql);
+    } else {
+      setResults([]);
+      setSql('');
+    }
+
+    setMessages([...newMessages, { text: data.response_type === 'data' ? `Found ${data.data.results.length} results.` : data.data.message, sender: 'ai', data }]);
   };
 
   return (
-    <div style={{ border: '1px solid black', padding: '10px', height: '500px', overflowY: 'scroll' }}>
-      <div>
-        {messages.map((msg, index) => (
-          <div key={index} style={{ textAlign: msg.sender === 'user' ? 'right' : 'left', margin: '5px' }}>
-            <p style={{ display: 'inline-block', padding: '5px', borderRadius: '5px', backgroundColor: msg.sender === 'user' ? '#dcf8c6' : '#f1f0f0' }}>
-                <strong>{msg.sender}:</strong>
-                <pre>{msg.text}</pre>
-            </p>
-          </div>
-        ))}
+    <div>
+      <div style={{ border: '1px solid black', padding: '10px', height: '500px', overflowY: 'scroll' }}>
+        <div>
+          {messages.map((msg, index) => (
+            <div key={index} style={{ textAlign: msg.sender === 'user' ? 'right' : 'left', margin: '5px' }}>
+              <p style={{ display: 'inline-block', padding: '5px', borderRadius: '5px', backgroundColor: msg.sender === 'user' ? '#dcf8c6' : '#f1f0f0' }}>
+                  <strong>{msg.sender}:</strong>
+                  <pre>{msg.text}</pre>
+              </p>
+            </div>
+          ))}
+        </div>
       </div>
       <div style={{ display: 'flex', marginTop: '10px' }}>
         <input
@@ -58,6 +65,8 @@ export default function ChatWindow() {
         />
         <button onClick={handleSend} style={{ marginLeft: '5px' }}>Send</button>
       </div>
+      <SqlPreview sql={sql} />
+      <ResultsTable results={results} />
     </div>
   );
 }

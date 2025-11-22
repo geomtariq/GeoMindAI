@@ -54,9 +54,9 @@ description: "Task list for implementing the GeoMind AI Core feature."
 - [X] T015 [US1] Implement the Oracle Data Gateway for executing queries (`backend/src/services/oracle_gateway.py`)
 - [X] T016 [US1] Implement the `/chat` API endpoint (`backend/src/api/chat.py`)
 - [X] T017 [P] [US1] Create the main chat window component in the frontend (`frontend/src/components/ChatWindow.jsx`)
-- [ ] T018 [P] [US1] Create the component for displaying tabular results (`frontend/src/components/ResultsTable.jsx`)
-- [ ] T019 [P] [US1] Create the component for displaying the SQL preview and reasoning (`frontend/src/components/SqlPreview.jsx`)
-- [ ] T020 [US1] Integrate frontend components and API service calls (`frontend/src/pages/index.js`)
+- [X] T018 [P] [US1] Create the component for displaying tabular results (`frontend/src/components/ResultsTable.jsx`)
+- [X] T019 [P] [US1] Create the component for displaying the SQL preview and reasoning (`frontend/src/components/SqlPreview.jsx`)
+- [X] T020 [US1] Integrate frontend components and API service calls (`frontend/src/pages/index.js`)
 
 **Checkpoint**: At this point, User Story 1 should be fully functional and testable independently.
 

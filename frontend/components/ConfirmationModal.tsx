@@ -1,5 +1,8 @@
 'use client';
 
+import { Modal } from './ui/Modal';
+import { Button } from './ui/Button';
+
 interface ConfirmationModalProps {
   sql: string;
   onConfirm: () => void;
@@ -8,20 +11,19 @@ interface ConfirmationModalProps {
 
 export default function ConfirmationModal({ sql, onConfirm, onCancel }: ConfirmationModalProps) {
   return (
-    <div style={{
-      position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-      backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex',
-      justifyContent: 'center', alignItems: 'center'
-    }}>
-      <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '5px' }}>
-        <h3>Confirm SQL Execution</h3>
-        <p>Are you sure you want to execute the following SQL statement?</p>
-        <pre><code>{sql}</code></pre>
-        <div style={{ marginTop: '10px' }}>
-          <button onClick={onConfirm} style={{ marginRight: '10px' }}>Confirm</button>
-          <button onClick={onCancel}>Cancel</button>
+    <Modal isOpen={true} onClose={onCancel} title="Confirm SQL Execution">
+      <div className="space-y-4">
+        <p className="text-sm text-muted-foreground">
+          Are you sure you want to execute the following SQL statement?
+        </p>
+        <div className="bg-muted p-4 rounded-md overflow-x-auto">
+          <pre className="text-xs font-mono text-foreground"><code>{sql}</code></pre>
+        </div>
+        <div className="flex justify-end space-x-2">
+          <Button variant="outline" onClick={onCancel}>Cancel</Button>
+          <Button onClick={onConfirm}>Confirm</Button>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

@@ -1,5 +1,5 @@
 import pytest
-from src.services.sql_validator import SQLSafetyValidator
+from services.sql_validator import SQLSafetyValidator
 
 @pytest.fixture
 def validator():

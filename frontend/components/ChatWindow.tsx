@@ -1,9 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import ResultsTable from './ResultsTable';
 import SqlPreview from './SqlPreview';
 import ConfirmationModal from './ConfirmationModal';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from './ui/Card';
+import { Input } from './ui/Input';
+import { Button } from './ui/Button';
+import { Send, Bot, User, Loader2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface Message {
   text: string;
@@ -11,73 +16,150 @@ interface Message {
   data?: any;
 }
 
-export default function ChatWindow() {
+interface ChatWindowProps {
+  isEnabled: boolean;
+  sessionId: string;
+}
+
+export default function ChatWindow({ isEnabled, sessionId }: ChatWindowProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [results, setResults] = useState<any[]>([]);
   const [sqlToApprove, setSqlToApprove] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   const handleSend = async () => {
-    if (!input.trim()) return;
+    if (!input.trim() || !isEnabled) return;
 
     const newMessages: Message[] = [...messages, { text: input, sender: 'user' }];
     setMessages(newMessages);
     setInput('');
+    setIsLoading(true);
 
-    const response = await fetch('/api/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: input, session_id: '123' }), // Placeholder session_id
-    });
-    const data = await response.json();
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: input, session_id: sessionId }),
+      });
+      const data = await response.json();
 
-    if (data.response_type === 'data') {
-      setResults(data.data.results);
-      setMessages([...newMessages, { text: `Found ${data.data.results.length} results.`, sender: 'ai', data }]);
-    } else if (data.response_type === 'sql_approval') {
-      setSqlToApprove(data.data.sql);
-    } else {
-      setResults([]);
-      setMessages([...newMessages, { text: data.data.message, sender: 'ai', data }]);
+      if (data.response_type === 'data') {
+        setResults(data.data.results);
+        setMessages(prev => [...prev, { text: `Found ${data.data.results.length} results.`, sender: 'ai', data }]);
+      } else if (data.response_type === 'sql_approval') {
+        setSqlToApprove(data.data.sql);
+      } else {
+        setResults([]);
+        setMessages(prev => [...prev, { text: data.data.message || 'An error occurred.', sender: 'ai', data }]);
+      }
+    } catch (error) {
+      setMessages(prev => [...prev, { text: "Failed to send message.", sender: 'ai' }]);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleConfirm = async () => {
-    // TODO: Create a new API endpoint to execute the approved SQL
+    // This part is not fully implemented as per the original tasks.
+    // A real implementation would send the approved SQL to a new backend endpoint.
     console.log("SQL Approved:", sqlToApprove);
     setSqlToApprove('');
-    setMessages([...messages, { text: "Write operation successful.", sender: 'ai' }]);
+    setMessages(prev => [...prev, { text: "Write operation successful (simulation).", sender: 'ai' }]);
   };
 
   const handleCancel = () => {
     setSqlToApprove('');
-    setMessages([...messages, { text: "Write operation cancelled.", sender: 'ai' }]);
+    setMessages(prev => [...prev, { text: "Write operation cancelled.", sender: 'ai' }]);
   };
 
   return (
-    <div>
-      <div style={{ border: '1px solid black', padding: '10px', height: '500px', overflowY: 'scroll' }}>
-        <div>
-          {messages.map((msg, index) => (
-            <div key={index} style={{ textAlign: msg.sender === 'user' ? 'right' : 'left', margin: '5px' }}>
-              <p style={{ display: 'inline-block', padding: '5px', borderRadius: '5px', backgroundColor: msg.sender === 'user' ? '#dcf8c6' : '#f1f0f0' }}>
-                  <strong>{msg.sender}:</strong>
-                  <pre>{msg.text}</pre>
-              </p>
+    <Card className={cn("flex flex-col h-[600px] w-full border-primary/20 shadow-2xl bg-card/80 backdrop-blur-xl transition-opacity duration-500", !isEnabled && "opacity-50 pointer-events-none")}>
+      <CardHeader className="border-b border-border/50 p-4">
+        <CardTitle className="flex items-center gap-2 text-lg">
+          <Bot className="w-5 h-5 text-primary" />
+          AI Assistant
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent">
+        {messages.length === 0 && (
+          <div className="flex flex-col items-center justify-center h-full text-muted-foreground opacity-50">
+            <Bot className="w-12 h-12 mb-2" />
+            <p>Start a conversation with the AI...</p>
+          </div>
+        )}
+        {messages.map((msg, index) => (
+          <div
+            key={index}
+            className={cn(
+              "flex w-full gap-2",
+              msg.sender === 'user' ? "justify-end" : "justify-start"
+            )}
+          >
+            {msg.sender === 'ai' && (
+              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 border border-primary/20">
+                <Bot className="w-4 h-4 text-primary" />
+              </div>
+            )}
+            <div
+              className={cn(
+                "max-w-[80%] rounded-lg p-3 text-sm",
+                msg.sender === 'user'
+                  ? "bg-primary text-primary-foreground ml-12"
+                  : "bg-muted text-foreground mr-12"
+              )}
+            >
+              <p className="whitespace-pre-wrap">{msg.text}</p>
+              {msg.data?.data?.sql && <SqlPreview sql={msg.data.data.sql} />}
             </div>
-          ))}
+            {msg.sender === 'user' && (
+              <div className="w-8 h-8 rounded-full bg-secondary/10 flex items-center justify-center flex-shrink-0 border border-secondary/20">
+                <User className="w-4 h-4 text-secondary" />
+              </div>
+            )}
+          </div>
+        ))}
+        {isLoading && (
+          <div className="flex justify-start gap-2">
+            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 border border-primary/20">
+              <Bot className="w-4 h-4 text-primary" />
+            </div>
+            <div className="bg-muted rounded-lg p-3 flex items-center">
+              <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+            </div>
+          </div>
+        )}
+        <div ref={messagesEndRef} />
+      </CardContent>
+      <CardFooter className="p-4 border-t border-border/50">
+        <div className="flex w-full gap-2">
+          <Input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+            disabled={!isEnabled || isLoading}
+            placeholder={isEnabled ? "Ask a question about your data..." : "Please connect to a database first."}
+            className="flex-1 bg-background/50"
+          />
+          <Button
+            onClick={handleSend}
+            disabled={!isEnabled || isLoading || !input.trim()}
+            size="icon"
+          >
+            {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+          </Button>
         </div>
-      </div>
-      <div style={{ display: 'flex', marginTop: '10px' }}>
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-          style={{ flex: 1, padding: '5px' }}
-        />
-        <button onClick={handleSend} style={{ marginLeft: '5px' }}>Send</button>
-      </div>
+      </CardFooter>
+
       {sqlToApprove && (
         <ConfirmationModal
           sql={sqlToApprove}
@@ -85,8 +167,18 @@ export default function ChatWindow() {
           onCancel={handleCancel}
         />
       )}
-      <SqlPreview sql={messages.find(m => m.data?.data?.sql)?.data.data.sql || ''} />
-      <ResultsTable results={results} />
-    </div>
+
+      {results.length > 0 && (
+        <div className="fixed inset-x-0 bottom-0 z-40 p-4 bg-background/95 backdrop-blur-lg border-t border-border shadow-2xl max-h-[40vh] overflow-y-auto animate-in slide-in-from-bottom duration-300">
+          <div className="container mx-auto max-w-4xl">
+            <div className="flex justify-between items-center mb-2">
+              <h3 className="font-semibold text-lg">Query Results</h3>
+              <Button variant="ghost" size="sm" onClick={() => setResults([])}>Close</Button>
+            </div>
+            <ResultsTable results={results} />
+          </div>
+        </div>
+      )}
+    </Card>
   );
 }

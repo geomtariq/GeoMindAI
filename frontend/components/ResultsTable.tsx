@@ -1,5 +1,7 @@
 'use client';
 
+import { Card, CardContent, CardHeader, CardTitle } from './ui/Card';
+
 interface ResultsTableProps {
   results: any[];
 }
@@ -12,27 +14,34 @@ export default function ResultsTable({ results }: ResultsTableProps) {
   const headers = Object.keys(results[0]);
 
   return (
-    <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px' }}>
-      <thead>
-        <tr>
-          {headers.map((header) => (
-            <th key={header} style={{ border: '1px solid black', padding: '8px', backgroundColor: '#f2f2f2' }}>
-              {header}
-            </th>
-          ))}
-        </tr>
-      </thead>
-      <tbody>
-        {results.map((row, index) => (
-          <tr key={index}>
-            {headers.map((header) => (
-              <td key={header} style={{ border: '1px solid black', padding: '8px' }}>
-                {row[header]}
-              </td>
+    <Card className="mt-4 border-primary/20 bg-card/50 backdrop-blur-sm overflow-hidden">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-lg font-medium text-primary">Query Results</CardTitle>
+      </CardHeader>
+      <CardContent className="p-0 overflow-x-auto">
+        <table className="w-full text-sm text-left">
+          <thead className="text-xs uppercase bg-muted/50 text-muted-foreground">
+            <tr>
+              {headers.map((header) => (
+                <th key={header} className="px-6 py-3 font-medium tracking-wider">
+                  {header}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border/50">
+            {results.map((row, index) => (
+              <tr key={index} className="bg-card hover:bg-muted/50 transition-colors">
+                {headers.map((header) => (
+                  <td key={header} className="px-6 py-4 whitespace-nowrap text-foreground/90">
+                    {row[header]}
+                  </td>
+                ))}
+              </tr>
             ))}
-          </tr>
-        ))}
-      </tbody>
-    </table>
+          </tbody>
+        </table>
+      </CardContent>
+    </Card>
   );
 }

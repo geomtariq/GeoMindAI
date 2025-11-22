@@ -1,11 +1,7 @@
 from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
-    oracle_user: str
-    oracle_password: str
-    oracle_dsn: str
-
-    class Config:
-        env_file = ".env"
+    # This file can be used for other application-level settings in the future.
+    pass
 
 settings = Settings()

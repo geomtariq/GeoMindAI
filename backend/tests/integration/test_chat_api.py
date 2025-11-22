@@ -1,12 +1,12 @@
 import pytest
 from httpx import AsyncClient
-from src.main import app
+from main import app
 from unittest.mock import patch
 
 @pytest.mark.asyncio
 async def test_chat_read_intent():
-    with patch('src.services.ai_orchestrator.ai_orchestrator.process_query') as mock_process_query, \
-         patch('src.services.oracle_gateway.oracle_gateway.execute_query') as mock_execute_query:
+    with patch('services.ai_orchestrator.ai_orchestrator.process_query') as mock_process_query, \
+         patch('services.oracle_gateway.oracle_gateway.execute_query') as mock_execute_query:
 
         mock_process_query.return_value = {"intent": "read", "sql": "SELECT * FROM DUAL"}
         mock_execute_query.return_value = [{"DUMMY": "X"}]

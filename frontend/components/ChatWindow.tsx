@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import ResultsTable from './ResultsTable';
 import SqlPreview from './SqlPreview';
+import ConfirmationModal from './ConfirmationModal';
 
 interface Message {
   text: string;
@@ -14,7 +15,7 @@ export default function ChatWindow() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [results, setResults] = useState<any[]>([]);
-  const [sql, setSql] = useState('');
+  const [sqlToApprove, setSqlToApprove] = useState('');
 
   const handleSend = async () => {
     if (!input.trim()) return;
@@ -32,13 +33,25 @@ export default function ChatWindow() {
 
     if (data.response_type === 'data') {
       setResults(data.data.results);
-      setSql(data.data.sql);
+      setMessages([...newMessages, { text: `Found ${data.data.results.length} results.`, sender: 'ai', data }]);
+    } else if (data.response_type === 'sql_approval') {
+      setSqlToApprove(data.data.sql);
     } else {
       setResults([]);
-      setSql('');
+      setMessages([...newMessages, { text: data.data.message, sender: 'ai', data }]);
     }
+  };
 
-    setMessages([...newMessages, { text: data.response_type === 'data' ? `Found ${data.data.results.length} results.` : data.data.message, sender: 'ai', data }]);
+  const handleConfirm = async () => {
+    // TODO: Create a new API endpoint to execute the approved SQL
+    console.log("SQL Approved:", sqlToApprove);
+    setSqlToApprove('');
+    setMessages([...messages, { text: "Write operation successful.", sender: 'ai' }]);
+  };
+
+  const handleCancel = () => {
+    setSqlToApprove('');
+    setMessages([...messages, { text: "Write operation cancelled.", sender: 'ai' }]);
   };
 
   return (
@@ -65,7 +78,14 @@ export default function ChatWindow() {
         />
         <button onClick={handleSend} style={{ marginLeft: '5px' }}>Send</button>
       </div>
-      <SqlPreview sql={sql} />
+      {sqlToApprove && (
+        <ConfirmationModal
+          sql={sqlToApprove}
+          onConfirm={handleConfirm}
+          onCancel={handleCancel}
+        />
+      )}
+      <SqlPreview sql={messages.find(m => m.data?.data?.sql)?.data.data.sql || ''} />
       <ResultsTable results={results} />
     </div>
   );

@@ -10,20 +10,27 @@ llm = Ollama(model="llama2")
 class AIOrchestrator:
     def __init__(self):
         # TODO: Develop a more sophisticated prompt that includes schema info, examples, etc.
-        self.prompt = PromptTemplate(
+        self.query_prompt = PromptTemplate(
             input_variables=["query"],
             template="You are an expert in Oracle SQL. Convert the following natural language query into a SQL statement:\n\n{query}\n\nSQL:",
         )
-        self.chain = LLMChain(llm=llm, prompt=self.prompt)
+        self.intent_prompt = PromptTemplate(
+            input_variables=["query"],
+            template="Given the query '{query}', is the user's intent to 'read' or 'write' data? Respond with only one word.",
+        )
+        self.query_chain = LLMChain(llm=llm, prompt=self.query_prompt)
+        self.intent_chain = LLMChain(llm=llm, prompt=self.intent_prompt)
 
-    def process_query(self, query: str) -> str:
+
+    def process_query(self, query: str) -> dict:
         """
-        Takes a natural language query and returns a SQL statement.
+        Takes a natural language query and returns a dictionary with the SQL statement and intent.
         """
-        # TODO: Add more sophisticated logic to handle different intents (query, update, etc.)
-        # and to include context from the schema_engine.
-        response = self.chain.run(query)
-        return response.strip()
+        intent = self.intent_chain.run(query).strip().lower()
+        sql = self.query_chain.run(query).strip()
+        
+        return {"intent": intent, "sql": sql}
+
 
 ai_orchestrator = AIOrchestrator()
 

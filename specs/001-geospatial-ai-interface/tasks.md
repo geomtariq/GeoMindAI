@@ -70,12 +70,12 @@ description: "Task list for implementing the GeoMind AI Core feature."
 
 ### Implementation for User Story 2
 
-- [ ] T021 [US2] Extend the SQL Safety Validator to handle UPDATE statements (`backend/src/services/sql_validator.py`)
-- [ ] T022 [US2] Enhance the AI Orchestrator to detect "update" intent and extract parameters (`backend/src/services/ai_orchestrator.py`)
-- [ ] T023 [US2] Implement logic in the `/chat` endpoint to handle the `sql_approval` response type (`backend/src/api/chat.py`)
-- [ ] T024 [P] [US2] Create a confirmation modal in the frontend for approving SQL statements (`frontend/src/components/ConfirmationModal.jsx`)
-- [ ] T025 [US2] Implement the frontend logic to display the confirmation modal and send approval to the backend (`frontend/src/pages/index.js`)
-- [ ] T026 [US2] Add detailed audit logging for all write operations (`backend/src/utils/audit.py`)
+- [X] T021 [US2] Extend the SQL Safety Validator to handle UPDATE statements (`backend/src/services/sql_validator.py`)
+- [X] T022 [US2] Enhance the AI Orchestrator to detect "update" intent and extract parameters (`backend/src/services/ai_orchestrator.py`)
+- [X] T023 [US2] Implement logic in the `/chat` endpoint to handle the `sql_approval` response type (`backend/src/api/chat.py`)
+- [X] T024 [P] [US2] Create a confirmation modal in the frontend for approving SQL statements (`frontend/src/components/ConfirmationModal.jsx`)
+- [X] T025 [US2] Implement the frontend logic to display the confirmation modal and send approval to the backend (`frontend/src/pages/index.js`)
+- [X] T026 [US2] Add detailed audit logging for all write operations (`backend/src/utils/audit.py`)
 
 **Checkpoint**: At this point, User Stories 1 AND 2 should both work independently.
 

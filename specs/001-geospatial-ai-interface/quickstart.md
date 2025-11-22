@@ -18,14 +18,14 @@ The system is composed of two main components:
 
 ### Backend
 
-1.  **Prerequisites**: Python 3.11, Poetry for dependency management.
-2.  **Installation**: `poetry install`
+1.  **Prerequisites**: Python 3.11.
+2.  **Installation**: `pip install -r requirements.txt`
 3.  **Configuration**: Set up environment variables for database connection, Auth0, etc., in a `.env` file.
-4.  **Running**: `poetry run uvicorn app.main:app --reload`
+4.  **Running**: `uvicorn src.main:app --reload`
 
 ### Frontend
 
-1.  **Prerequisites**: Node.js 20.x, Yarn for package management.
-2.  **Installation**: `yarn install`
+1.  **Prerequisites**: Node.js 20.x, npm for package management.
+2.  **Installation**: `npm install`
 3.  **Configuration**: Set up environment variables for the backend API URL, etc., in a `.env.local` file.
-4.  **Running**: `yarn dev`
+4.  **Running**: `npm run dev`

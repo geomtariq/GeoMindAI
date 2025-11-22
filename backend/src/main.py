@@ -10,6 +10,7 @@ app = FastAPI()
 
 app.include_router(chat_router)
 
+# Middleware to log incoming requests and outgoing responses
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
     logger.info(f"Incoming request: {request.method} {request.url}")

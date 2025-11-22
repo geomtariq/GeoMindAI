@@ -85,11 +85,11 @@ description: "Task list for implementing the GeoMind AI Core feature."
 
 **Purpose**: General improvements affecting all user stories.
 
-- [ ] T027 [P] Write comprehensive API documentation using OpenAPI (`docs/api.md`)
-- [ ] T028 Perform code cleanup and refactoring across the codebase.
-- [ ] T029 [P] Add unit tests for critical business logic in the backend (`backend/tests/unit/`)
-- [ ] T030 [P] Add integration tests for the main user flows (`backend/tests/integration/`)
-- [ ] T031 Validate and update the `quickstart.md` documentation.
+- [X] T027 [P] Write comprehensive API documentation using OpenAPI (`docs/api.md`)
+- [X] T028 Perform code cleanup and refactoring across the codebase.
+- [X] T029 [P] Add unit tests for critical business logic in the backend (`backend/tests/unit/`)
+- [X] T030 [P] Add integration tests for the main user flows (`backend/tests/integration/`)
+- [X] T031 Validate and update the `quickstart.md` documentation.
 
 ---
 

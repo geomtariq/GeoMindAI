@@ -70,11 +70,24 @@ export default function ChatWindow({ isEnabled, sessionId }: ChatWindowProps) {
   };
 
   const handleConfirm = async () => {
-    // This part is not fully implemented as per the original tasks.
-    // A real implementation would send the approved SQL to a new backend endpoint.
-    console.log("SQL Approved:", sqlToApprove);
-    setSqlToApprove('');
-    setMessages(prev => [...prev, { text: "Write operation successful (simulation).", sender: 'ai' }]);
+    try {
+      const response = await fetch('/api/execute_approved', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id: sessionId, sql: sqlToApprove }),
+      });
+      const data = await response.json();
+
+      if (response.ok) {
+        setMessages(prev => [...prev, { text: "Write operation executed successfully.", sender: 'ai' }]);
+      } else {
+        setMessages(prev => [...prev, { text: `Execution failed: ${data.detail || 'Unknown error'}`, sender: 'ai' }]);
+      }
+    } catch (error) {
+      setMessages(prev => [...prev, { text: "Failed to execute operation.", sender: 'ai' }]);
+    } finally {
+      setSqlToApprove('');
+    }
   };
 
   const handleCancel = () => {

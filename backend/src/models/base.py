@@ -16,3 +16,7 @@ class ChatResponse(BaseModel):
     response_type: str
     data: dict
     session_id: str
+
+class ExecuteRequest(BaseModel):
+    session_id: str
+    sql: str

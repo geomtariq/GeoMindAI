@@ -33,3 +33,6 @@ PyYAML
 requests
 numpy
 packaging
+
+# Google Gemini AI
+google-generativeai

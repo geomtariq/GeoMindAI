@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from models.base import DbConnectionRequest, ChatRequest, ChatResponse
+from models.base import DbConnectionRequest, ChatRequest, ChatResponse, ExecuteRequest
 from services.ai_orchestrator import ai_orchestrator
 from services.sql_validator import sql_validator
 from services.oracle_gateway import oracle_gateway
@@ -50,3 +50,22 @@ async def chat(request: ChatRequest):
     except Exception as e:
         logger.error(f"Error processing chat request for session {request.session_id}: {e}", exc_info=True)
         return ChatResponse(response_type="error", data={"message": str(e)}, session_id=request.session_id)
+
+@router.post("/execute_approved")
+async def execute_approved(request: ExecuteRequest):
+    logger.info(f"Execution request for session {request.session_id}: {request.sql}")
+    try:
+        # Validate again just to be safe (though approval implies it was checked)
+        if not sql_validator.validate_write(request.sql):
+             logger.warning(f"Invalid write query attempted in execution: {request.sql}")
+             raise HTTPException(status_code=400, detail="Invalid write query.")
+
+        # Execute
+        oracle_gateway.execute_query(request.session_id, request.sql)
+        logger.info(f"Write query executed successfully for session {request.session_id}")
+        
+        return {"status": "success", "message": "Operation executed successfully."}
+
+    except Exception as e:
+        logger.error(f"Execution failed for session {request.session_id}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Execution failed: {str(e)}")

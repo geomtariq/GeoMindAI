@@ -1,0 +1,130 @@
+Complete SQL Command Reference Document
+
+1. DDL – Data Definition Language
+
+CREATE
+
+CREATE DATABASE dbname; CREATE SCHEMA schema_name; CREATE TABLE
+table_name ( column1 datatype constraints, column2 datatype ); CREATE
+TABLE table_name AS SELECT …; CREATE INDEX index_name ON table(col);
+CREATE UNIQUE INDEX index_name ON table(col); CREATE VIEW view_name AS
+SELECT …; CREATE MATERIALIZED VIEW mv_name AS SELECT …; CREATE SEQUENCE
+seq_name START WITH 1 INCREMENT BY 1; CREATE TYPE type_name AS (…);
+CREATE FUNCTION func_name(…) RETURNS … AS
+...
+; CREATE PROCEDURE proc_name(…) AS
+...
+; CREATE TRIGGER trigger_name BEFORE INSERT ON table FOR EACH ROW
+EXECUTE FUNCTION func();
+
+ALTER
+
+ALTER DATABASE dbname SET timezone = ‘UTC’; ALTER SCHEMA schema_name
+RENAME TO new_schema; ALTER TABLE table_name ADD column_name datatype;
+ALTER TABLE table_name DROP COLUMN column_name; ALTER TABLE table_name
+RENAME COLUMN old TO new; ALTER TABLE table_name RENAME TO new_table;
+ALTER TABLE table_name ALTER COLUMN column TYPE new_type; ALTER TABLE
+table_name ADD CONSTRAINT pk PRIMARY KEY (col); ALTER TABLE table_name
+ADD CONSTRAINT fk FOREIGN KEY (col) REFERENCES other_table(col);
+
+DROP
+
+DROP DATABASE dbname; DROP SCHEMA schema_name CASCADE; DROP TABLE
+table_name; DROP VIEW view_name; DROP MATERIALIZED VIEW mv_name; DROP
+INDEX index_name; DROP SEQUENCE seq_name; DROP TRIGGER trigger_name ON
+table_name; DROP FUNCTION func_name; DROP PROCEDURE proc_name;
+
+2. DML – Data Manipulation Language
+
+INSERT INTO table (col1, col2) VALUES (val1, val2); INSERT INTO table
+VALUES (…); INSERT INTO table SELECT …;
+
+UPDATE table SET col = value WHERE condition;
+
+DELETE FROM table WHERE condition; DELETE FROM table; TRUNCATE TABLE
+table;
+
+MERGE INTO target t USING source s ON (…) WHEN MATCHED THEN UPDATE SET …
+WHEN NOT MATCHED THEN INSERT (…);
+
+3. DQL – Data Query Language
+
+SELECT * FROM table; SELECT col1, col2 FROM table; SELECT DISTINCT col
+FROM table;
+
+SELECT * FROM table WHERE col = value; SELECT * FROM table WHERE col IN
+(…); SELECT * FROM table WHERE col LIKE ‘abc%’; SELECT * FROM table
+WHERE col BETWEEN x AND y; SELECT * FROM table WHERE col IS NULL;
+
+SELECT … FROM a INNER JOIN b ON a.id = b.id; SELECT … FROM a LEFT JOIN b
+ON …; SELECT … FROM a RIGHT JOIN b ON …; SELECT … FROM a FULL JOIN b ON
+…; SELECT … FROM a CROSS JOIN b; SELECT … FROM a JOIN b USING (id);
+
+SELECT col, COUNT(*) FROM table GROUP BY col; SELECT col, SUM(value)
+FROM table GROUP BY col HAVING SUM(value) > 1000;
+
+SELECT … ORDER BY col ASC; SELECT … ORDER BY col DESC; SELECT … LIMIT 10
+OFFSET 20;
+
+SELECT … UNION SELECT …; SELECT … UNION ALL SELECT …; INTERSECT EXCEPT
+
+4. Subqueries
+
+SELECT * FROM table WHERE col IN (SELECT col FROM other_table); SELECT *
+FROM table WHERE col = (SELECT MAX(col) FROM other_table); SELECT ,
+(SELECT COUNT() FROM orders o WHERE o.user_id = u.id) AS orders_count
+FROM users u;
+
+5. Window Functions
+
+SELECT col, ROW_NUMBER() OVER(PARTITION BY a ORDER BY b), RANK()
+OVER(…), DENSE_RANK() OVER(…), SUM(col) OVER(PARTITION BY grp), AVG(col)
+OVER(ORDER BY timestamp RANGE BETWEEN INTERVAL ‘7 days’ PRECEDING AND
+CURRENT ROW) FROM table;
+
+6. Constraints
+
+PRIMARY KEY (col) FOREIGN KEY (col) REFERENCES table(col) UNIQUE (col)
+CHECK (col > 0) NOT NULL DEFAULT value
+
+7. Transaction Control
+
+BEGIN; COMMIT; ROLLBACK; SAVEPOINT sp1; ROLLBACK TO sp1; SET TRANSACTION
+ISOLATION LEVEL SERIALIZABLE;
+
+8. DCL – Permissions
+
+GRANT SELECT ON table TO user; GRANT ALL PRIVILEGES ON DATABASE db TO
+user; REVOKE INSERT ON table FROM user; CREATE USER username WITH
+PASSWORD ‘pwd’; ALTER USER username WITH SUPERUSER; DROP USER username;
+
+9. Procedures / Functions
+
+CREATE FUNCTION add_numbers(a INT, b INT) RETURNS INT AS
+BEGINRETURNa + b; END;
+LANGUAGE plpgsql;
+
+CALL procedure_name(params); EXEC procedure_name;
+
+10. Triggers
+
+CREATE TRIGGER audit BEFORE UPDATE ON employees FOR EACH ROW EXECUTE
+FUNCTION log_change();
+
+11. Indexing
+
+CREATE INDEX idx ON table(col); CREATE UNIQUE INDEX idx ON table(col);
+CREATE INDEX idx ON table(col1, col2); CREATE INDEX idx_gin ON table
+USING gin(col);
+
+12. Vendor-Specific (Postgres, Snowflake, SQL Server, Oracle)
+
+SELECT to_json(row); SELECT * FROM jsonb_each(jsoncol); ALTER TABLE
+table ALTER COLUMN col SET STATISTICS 1000;
+
+CREATE WAREHOUSE wh; USE SCHEMA db.schema; COPY INTO table FROM
+@stage/file.csv FILE_FORMAT=(type=‘csv’);
+
+SELECT TOP 10 * FROM table; DECLARE @var INT;
+
+SELECT * FROM table FETCH NEXT 10 ROWS ONLY;

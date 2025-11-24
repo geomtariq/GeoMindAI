@@ -1,85 +1,159 @@
+'use client';
+
 import { useState, useEffect } from 'react';
-import ChatWindow from '../components/ChatWindow';
 import DbConnection from '../components/DbConnection';
-import Head from 'next/head';
+import ChatPanel from '../components/ChatPanel';
+import DataVisualizationPanel from '../components/DataVisualizationPanel';
+import ResizablePanels from '../components/ui/ResizablePanels';
+import { v4 as uuidv4 } from 'uuid';
 
 export default function Home() {
   const [isConnected, setIsConnected] = useState(false);
   const [sessionId, setSessionId] = useState('');
-  const [error, setError] = useState('');
+  const [connectionError, setConnectionError] = useState('');
+  const [currentData, setCurrentData] = useState<any[]>([]);
+  const [currentSql, setCurrentSql] = useState('');
+  const [beforeData, setBeforeData] = useState<any[]>([]);
+  const [afterData, setAfterData] = useState<any[]>([]);
+  const [lastReadMessage, setLastReadMessage] = useState('');
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
-    // Generate a unique session ID when the component mounts
-    setSessionId(Math.random().toString(36).substring(7));
+    setSessionId(uuidv4());
   }, []);
 
-  const handleConnect = async (details: any) => {
-    setError('');
+  const handleConnect = async (config: any) => {
     try {
       const response = await fetch('/api/connect', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...details, session_id: sessionId }),
+        body: JSON.stringify({ ...config, session_id: sessionId }),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to connect');
+      if (response.ok) {
+        setIsConnected(true);
+        setConnectionError('');
+      } else {
+        const data = await response.json();
+        setConnectionError(data.detail || 'Connection failed');
       }
-
-      setIsConnected(true);
-    } catch (err: any) {
-      setError(err.message);
-      throw err; // Re-throw to be caught by the component
+    } catch (error) {
+      setConnectionError('Failed to connect to the server');
     }
   };
 
-  return (
-    <div className="min-h-screen bg-background text-foreground selection:bg-primary selection:text-primary-foreground">
-      <Head>
-        <title>GeoMind AI | Intelligent Database Assistant</title>
-        <meta name="description" content="AI-powered database analysis tool" />
-      </Head>
+  const handleDataReceived = (data: any[], sql: string, message?: string) => {
+    setCurrentData(data);
+    setCurrentSql(sql);
+    setBeforeData([]);
+    setAfterData([]);
+    if (message) {
+      setLastReadMessage(message);
+    }
+  };
 
-      <main className="container mx-auto p-4 md:p-8 max-w-5xl space-y-8">
-        <header className="text-center space-y-2 mb-12">
-          <h1 className="text-4xl md:text-6xl font-extrabold tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-primary via-secondary to-accent animate-pulse">
-            GeoMind AI
-          </h1>
-          <p className="text-muted-foreground text-lg md:text-xl max-w-2xl mx-auto">
-            Your intelligent assistant for Oracle database analysis and visualization.
-          </p>
-        </header>
+  const handleOperationExecuted = (before: any[], after: any[]) => {
+    setBeforeData(before);
+    setAfterData(after);
+    // Optionally refresh current data
+    if (after && after.length > 0) {
+      setCurrentData(after);
+    }
+  };
 
-        <div className="grid gap-8 animate-in slide-in-from-bottom-10 duration-700 fade-in">
-          {!isConnected ? (
-            <DbConnection onConnect={handleConnect} isConnected={isConnected} />
-          ) : (
-            <div className="space-y-4">
-              <div className="flex justify-between items-center bg-card/50 p-4 rounded-lg border border-border">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse" />
-                  <span className="font-medium">Connected to Database</span>
-                </div>
-                <button
-                  onClick={() => setIsConnected(false)}
-                  className="text-sm text-muted-foreground hover:text-destructive transition-colors"
-                >
-                  Disconnect
-                </button>
-              </div>
-              <ChatWindow isEnabled={isConnected} sessionId={sessionId} />
+  const handleRefresh = async () => {
+    if (!lastReadMessage) return;
+
+    setIsRefreshing(true);
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: lastReadMessage, session_id: sessionId }),
+      });
+      const data = await response.json();
+
+      if (data.response_type === 'data') {
+        setCurrentData(data.data.results);
+        setCurrentSql(data.data.sql);
+        setBeforeData([]);
+        setAfterData([]);
+      }
+    } catch (error) {
+      console.error("Refresh failed:", error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  if (!isConnected) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold mb-2 bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
+              GeoMind AI
+            </h1>
+            <p className="text-muted-foreground">
+              AI-Powered Geoscience Data Platform
+            </p>
+          </div>
+          <DbConnection onConnect={handleConnect} sessionId={sessionId} />
+          {connectionError && (
+            <div className="mt-4 p-3 bg-destructive/10 border border-destructive text-destructive rounded-md text-sm">
+              {connectionError}
             </div>
           )}
         </div>
+      </div>
+    );
+  }
 
-        {error && (
-          <div className="fixed bottom-4 right-4 p-4 bg-destructive/10 border border-destructive text-destructive rounded-md shadow-lg animate-in slide-in-from-right">
-            <p className="font-medium">Connection Error</p>
-            <p className="text-sm opacity-90">{error}</p>
+  return (
+    <div className="h-screen w-screen overflow-hidden bg-background">
+      {/* Header */}
+      <header className="h-14 border-b border-border bg-card flex items-center px-6">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center">
+            <span className="text-white font-bold text-sm">GM</span>
           </div>
-        )}
-      </main>
+          <div>
+            <h1 className="font-bold text-lg">GeoMind AI</h1>
+            <p className="text-xs text-muted-foreground">Geoscience Data Platform</p>
+          </div>
+        </div>
+        <div className="ml-auto flex items-center gap-2">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+            <span>Connected</span>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content - Two Panel Layout */}
+      <div className="h-[calc(100vh-3.5rem)]">
+        <ResizablePanels
+          leftPanel={
+            <ChatPanel
+              isEnabled={isConnected}
+              sessionId={sessionId}
+              onDataReceived={handleDataReceived}
+              onOperationExecuted={handleOperationExecuted}
+            />
+          }
+          rightPanel={
+            <DataVisualizationPanel
+              data={currentData}
+              sql={currentSql}
+              beforeData={beforeData}
+              afterData={afterData}
+              onRefresh={lastReadMessage ? handleRefresh : undefined}
+              isRefreshing={isRefreshing}
+            />
+          }
+          defaultLeftSize={35}
+        />
+      </div>
     </div>
   );
 }

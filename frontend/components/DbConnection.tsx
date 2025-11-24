@@ -9,9 +9,10 @@ import { Database, Server, User, Key, Globe, Activity } from 'lucide-react';
 interface DbConnectionProps {
   onConnect: (connectionDetails: any) => Promise<void>;
   isConnected: boolean;
+  sessionId?: string;
 }
 
-export default function DbConnection({ onConnect, isConnected }: DbConnectionProps) {
+export default function DbConnection({ onConnect, isConnected, sessionId }: DbConnectionProps) {
   const [host, setHost] = useState('');
   const [port, setPort] = useState(1521);
   const [serviceName, setServiceName] = useState('');

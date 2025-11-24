@@ -36,3 +36,6 @@ packaging
 
 # Google Gemini AI
 google-generativeai
+
+# SQL parsing and validation
+sqlparse

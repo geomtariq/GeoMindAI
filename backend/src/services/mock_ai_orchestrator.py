@@ -4,6 +4,12 @@ import re
 logger = logging.getLogger(__name__)
 
 class MockAIOrchestrator:
+    def update_schema_context(self, metadata: dict):
+        """
+        Mock implementation of schema update.
+        """
+        logger.info("[MOCK AI] Schema context updated (mock)")
+
     def process_query(self, query: str) -> dict:
         """
         Mocks processing a natural language query.
@@ -12,6 +18,43 @@ class MockAIOrchestrator:
         logger.info(f"[MOCK AI] Processing query: {query}")
         
         query_lower = query.lower()
+        
+        # Pattern 0: Create/Insert New Well with Full Details (comma-separated or not)
+        # "create new well with name TARIQ, depth 3000, status INACTIVE"
+        full_create_match = re.search(
+            r"(?:create|insert|add).*?name\s+([^,]+).*?depth\s+(\d+).*?status\s+(\w+)", 
+            query_lower
+        )
+        
+        if full_create_match:
+            well_name = full_create_match.group(1).strip().upper()
+            depth = full_create_match.group(2)
+            status = full_create_match.group(3).upper()
+            
+            return {
+                "intent": "write",
+                "sql": f"INSERT INTO WELLS (WELL_NAME, STATUS, DEPTH) VALUES ('{well_name}', '{status}', {depth})"
+            }
+        
+        # Pattern 0a: Create/Insert New Well (simple)
+        # "create new well with name tariq" or "insert well named poseidon" or "add well X"
+        create_match = re.search(r"(?:create|insert|add)(?:\s+new)?\s+well\s+(?:with\s+name\s+|named\s+)?(.+)", query_lower)
+        
+        if create_match:
+            well_name = create_match.group(1).strip()
+            # Remove common trailing words and check for commas
+            well_name = re.sub(r'\s+(with|and|at).*$', '', well_name)
+            
+            # Skip if it contains commas (handled by full_create_match)
+            if ',' in well_name:
+                pass  # Let it fall through to other patterns
+            else:
+                well_name_upper = well_name.upper()
+                
+                return {
+                    "intent": "write",
+                    "sql": f"INSERT INTO WELLS (WELL_NAME, STATUS, DEPTH) VALUES ('{well_name_upper}', 'ACTIVE', 0)"
+                }
         
         # Pattern 1: Update Well Depth
         # "change well 1 depth to 2000" or "update well A depth to 500"
@@ -50,14 +93,34 @@ class MockAIOrchestrator:
             if well_identifier.isdigit():
                 where_clause = f"WELL_ID = {well_identifier}"
             else:
-                where_clause = f"WELL_NAME = '{well_identifier.upper()}'"
+                where_clause = f"WELL_NAME LIKE '%{well_identifier.upper()}%'"
                 
             return {
                 "intent": "write",
                 "sql": f"UPDATE WELLS SET STATUS = '{new_status}' WHERE {where_clause}"
             }
 
-        # Pattern 1c: Partial Update (Missing Identifier)
+        # Pattern 1c: Update Well Name
+        # "update well a name to TARIQ" or "change well B name to NEWNAME" or "rename well C to CHARLIE"
+        name_match = re.search(r"(?:update|change|set|edit|modify|rename)\s+well\s+(.+?)\s+(?:name\s+)?to\s+(.+)", query_lower)
+        
+        if name_match:
+            well_identifier = name_match.group(1).strip()
+            # Remove "name" if it appears in the identifier
+            well_identifier = well_identifier.replace("name", "").strip()
+            new_name = name_match.group(2).strip().upper()
+            
+            if well_identifier.isdigit():
+                where_clause = f"WELL_ID = {well_identifier}"
+            else:
+                where_clause = f"WELL_NAME LIKE '%{well_identifier.upper()}%'"
+                
+            return {
+                "intent": "write",
+                "sql": f"UPDATE WELLS SET WELL_NAME = '{new_name}' WHERE {where_clause}"
+            }
+
+        # Pattern 1d: Partial Update (Missing Identifier)
         # "edit well depth to 3000" or "change status of well to inactive"
         if re.search(r"(?:change|update|set|edit|modify)\s+well\s+depth", query_lower):
              return {

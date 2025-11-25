@@ -18,7 +18,7 @@ interface ChatPanelProps {
     isEnabled: boolean;
     sessionId: string;
     onDataReceived: (data: any[], sql: string, message?: string) => void;
-    onOperationExecuted: (beforeData: any[], afterData: any[]) => void;
+    onOperationExecuted: (beforeData: any[], afterData: any[], sql?: string) => void;
 }
 
 export default function ChatPanel({
@@ -82,15 +82,16 @@ export default function ChatPanel({
 
     const handleConfirm = async (before: any[], after: any[]) => {
         try {
+            const currentSql = sqlToApprove; // Capture before clearing
             const response = await fetch('/api/execute_approved', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ session_id: sessionId, sql: sqlToApprove }),
+                body: JSON.stringify({ session_id: sessionId, sql: currentSql }),
             });
             const data = await response.json();
 
             if (response.ok) {
-                onOperationExecuted(data.before_data || before, data.after_data || after);
+                onOperationExecuted(data.before_data || before, data.after_data || after, currentSql);
                 setMessages(prev => [...prev, {
                     text: `✅ ${data.description || 'Operation executed successfully'}`,
                     sender: 'ai'

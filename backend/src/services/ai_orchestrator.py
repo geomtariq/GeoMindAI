@@ -9,19 +9,23 @@ ai_impl = None
 
 if settings.GEMINI_API_KEY:
     try:
-        import google.generativeai as genai
+        from google import genai
         from services.sql_knowledge_base import sql_knowledge_base
         
-        # Test the API key by configuring it
-        genai.configure(api_key=settings.GEMINI_API_KEY)
-        
-        # Initialize knowledge base
+        # Initialize knowledge base with user-specified comprehensive reference
         logger.info("Initializing SQL Knowledge Base...")
+        # Add the specific absolute path requested by the user
+        sql_knowledge_base.reference_files = [
+            "sql_reference.txt", 
+            r"D:\GeoMindAI\GeoMindAI\comprehensive_sql_reference.txt"
+        ]
         sql_knowledge_base.initialize()
         
         class GeminiAIOrchestrator:
             def __init__(self):
-                self.model = genai.GenerativeModel('gemini-pro')
+                # Initialize the client with the API key
+                self.client = genai.Client(api_key=settings.GEMINI_API_KEY)
+                self.model_name = "gemini-2.0-flash" # Use the faster, newer model
                 
                 # Default schema (will be updated dynamically on connection)
                 self.schema = "Database Schema: Not connected. Please connect to a database."
@@ -67,28 +71,34 @@ if settings.GEMINI_API_KEY:
 
 {relevant_context}
 
-Task: Convert the following natural language query into Oracle SQL.
+Task: Convert the following natural language query into Oracle SQL based on the Database Schema provided above.
 
 Rules:
-1. Return ONLY the SQL statement, no explanations or markdown
-2. Use proper Oracle SQL syntax
-3. For INSERT operations, include all required columns (WELL_NAME, STATUS, DEPTH for WELLS)
-4. For UPDATE/DELETE operations, ALWAYS use WHERE clauses to target specific records
-- "update well a name to TARIQ" → UPDATE WELLS SET WELL_NAME = 'TARIQ' WHERE WELL_NAME LIKE '%A%'
-- "change well B name to NEWNAME" → UPDATE WELLS SET WELL_NAME = 'NEWNAME' WHERE WELL_NAME LIKE '%B%'
-- "rename well C to CHARLIE" → UPDATE WELLS SET WELL_NAME = 'CHARLIE' WHERE WELL_NAME LIKE '%C%'
-- "set well A status to INACTIVE" → UPDATE WELLS SET STATUS = 'INACTIVE' WHERE WELL_NAME LIKE '%A%'
-- "delete well tariq" → DELETE FROM WELLS WHERE WELL_NAME LIKE '%TARIQ%'
-- "show production for well A" → SELECT P.* FROM PRODUCTION P JOIN WELLS W ON P.WELL_ID = W.WELL_ID WHERE W.WELL_NAME LIKE '%A%'
-- "count active wells" → SELECT COUNT(*) FROM WELLS WHERE STATUS = 'ACTIVE'
-- "average depth by status" → SELECT STATUS, AVG(DEPTH) FROM WELLS GROUP BY STATUS
+1. Return ONLY the SQL statement, no explanations or markdown.
+2. Use proper Oracle SQL syntax.
+3. Analyze the "Database Schema" section above to find the correct table and column names.
+4. For INSERT operations, check the schema for all columns that are NOT NULL or required, and try to map user input to them.
+5. Do NOT make up column names. Only use columns explicitly listed in the Schema.
+6. TRANSFORM all string literal values to UPPERCASE, even if the user types them in lowercase (e.g. 'lora' -> 'LORA', 'active' -> 'ACTIVE'). This is CRITICAL for data consistency.
+7. For UPDATE/DELETE operations, use WHERE clauses to target specific records.
+8. If the user asks for multiple distinct actions (e.g. "create well AND create table"), return multiple SQL statements separated by a semicolon (;).
+
+Examples (General Patterns):
+- "create new [entity] with [attributes]" → INSERT INTO [TABLE] (COL1, COL2...) VALUES (VAL1, VAL2...)
+- "add well named lora with status active" → INSERT INTO WELLS (WELL_NAME, STATUS) VALUES ('LORA', 'ACTIVE')
+- "update [entity] [field] to [value]" → UPDATE [TABLE] SET [COL] = [VAL] WHERE [ID_COL] = ...
+- "show all [entities]" → SELECT * FROM [TABLE]
+- "create well A and add child table B" → INSERT INTO WELLS ...; CREATE TABLE B ...
 
 Natural Language Query: {query}
 
 SQL:"""
                     
-                    # Generate SQL
-                    response = self.model.generate_content(prompt)
+                    # Generate SQL using the new client
+                    response = self.client.models.generate_content(
+                        model=self.model_name,
+                        contents=prompt
+                    )
                     sql = response.text.strip()
                     
                     # Remove markdown code blocks if present
@@ -98,8 +108,10 @@ SQL:"""
                         sql = sql.replace('```sql', '').replace('```', '')
                     sql = sql.strip()
                     
-                    # Remove any trailing semicolons
-                    sql = sql.rstrip(';')
+                    # Remove any trailing semicolons (only if single statement, but we allow multiple now)
+                    # Actually, we should keep internal semicolons but maybe remove the very last one
+                    if sql.endswith(';'):
+                        sql = sql[:-1]
                     
                     # Determine intent based on SQL command
                     sql_upper = sql.upper()
@@ -120,7 +132,7 @@ SQL:"""
         
         # Try to create an instance to verify the API key works
         ai_impl = GeminiAIOrchestrator()
-        logger.info("✅ Using Gemini AI Orchestrator with RAG and Dynamic Schema")
+        logger.info("✅ Using Gemini AI Orchestrator (v2 SDK) with RAG and Dynamic Schema")
         
     except Exception as e:
         logger.warning(f"❌ Failed to initialize Gemini AI Orchestrator: {e}")

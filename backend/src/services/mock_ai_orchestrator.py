@@ -100,6 +100,24 @@ class MockAIOrchestrator:
                 "sql": f"UPDATE WELLS SET STATUS = '{new_status}' WHERE {where_clause}"
             }
 
+        # Pattern 1c: Update Field Name
+        # "update field name of well TARIQ to PORKISTAN"
+        field_match = re.search(r"(?:change|update|set|edit|modify)\s+field\s+name\s+of\s+well\s+(.+?)\s+to\s+(.+)", query_lower)
+        
+        if field_match:
+            well_identifier = field_match.group(1).strip()
+            new_field = field_match.group(2).strip().upper()
+            
+            if well_identifier.isdigit():
+                where_clause = f"WELL_ID = {well_identifier}"
+            else:
+                where_clause = f"WELL_NAME LIKE '%{well_identifier.upper()}%'"
+                
+            return {
+                "intent": "write",
+                "sql": f"UPDATE WELLS SET FIELD_NAME = '{new_field}' WHERE {where_clause}"
+            }
+
         # Pattern 1c: Update Well Name
         # "update well a name to TARIQ" or "change well B name to NEWNAME" or "rename well C to CHARLIE"
         name_match = re.search(r"(?:update|change|set|edit|modify|rename)\s+well\s+(.+?)\s+(?:name\s+)?to\s+(.+)", query_lower)

@@ -39,3 +39,6 @@ google-generativeai
 
 # SQL parsing and validation
 sqlparse
+
+# RAG / Vector DB
+sentence-transformers

@@ -52,9 +52,12 @@ export default function Home() {
     }
   };
 
-  const handleOperationExecuted = (before: any[], after: any[]) => {
+  const handleOperationExecuted = (before: any[], after: any[], sql?: string) => {
     setBeforeData(before);
     setAfterData(after);
+    if (sql) {
+      setCurrentSql(sql);
+    }
     // Optionally refresh current data
     if (after && after.length > 0) {
       setCurrentData(after);

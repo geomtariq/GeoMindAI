@@ -6,11 +6,16 @@ from copy import deepcopy
 logger = logging.getLogger(__name__)
 
 class EnhancedMockOracleGateway:
-    """Enhanced mock Oracle gateway with support for JOIN, aggregates, and complex queries."""
+    """Enhanced mock Oracle gateway with support for JOIN, aggregates, complex queries, and DDL."""
     
     def __init__(self):
         self._pools = {}
-        # Initialize comprehensive test data
+        
+        # Dynamic storage for tables created at runtime
+        # Structure: {"TABLE_NAME": {"columns": [{"name": "COL", "type": "TYPE"}], "data": []}}
+        self.dynamic_tables = {}
+        
+        # Initialize comprehensive test data (Hardcoded for initial state)
         self.wells = [
             {"WELL_ID": 1, "WELL_NAME": "MOCK WELL A", "DEPTH": 1000, "STATUS": "ACTIVE", "FIELD_NAME": "POSEIDON", "OPERATOR": "ACME OIL"},
             {"WELL_ID": 2, "WELL_NAME": "MOCK WELL B", "DEPTH": 2500, "STATUS": "INACTIVE", "FIELD_NAME": "POSEIDON", "OPERATOR": "ACME OIL"},
@@ -52,95 +57,112 @@ class EnhancedMockOracleGateway:
         Returns a dictionary structure representing tables and columns.
         """
         logger.info("[MOCK] Retrieving schema metadata")
-        return {
-            "tables": [
-                {
-                    "name": "WELLS",
-                    "columns": [
-                        {"name": "WELL_ID", "type": "NUMBER", "pk": True},
-                        {"name": "WELL_NAME", "type": "VARCHAR2(100)", "constraints": "UNIQUE, NOT NULL"},
-                        {"name": "DEPTH", "type": "NUMBER", "constraints": "DEFAULT 0"},
-                        {"name": "STATUS", "type": "VARCHAR2(20)"},
-                        {"name": "LATITUDE", "type": "NUMBER"},
-                        {"name": "LONGITUDE", "type": "NUMBER"},
-                        {"name": "SPUD_DATE", "type": "DATE"},
-                        {"name": "COMPLETION_DATE", "type": "DATE"},
-                        {"name": "FIELD_NAME", "type": "VARCHAR2(100)"},
-                        {"name": "OPERATOR", "type": "VARCHAR2(100)"}
-                    ]
-                },
-                {
-                    "name": "PRODUCTION",
-                    "columns": [
-                        {"name": "PRODUCTION_ID", "type": "NUMBER", "pk": True},
-                        {"name": "WELL_ID", "type": "NUMBER", "fk": "WELLS.WELL_ID"},
-                        {"name": "PRODUCTION_DATE", "type": "DATE"},
-                        {"name": "OIL_VOLUME", "type": "NUMBER"},
-                        {"name": "GAS_VOLUME", "type": "NUMBER"},
-                        {"name": "WATER_VOLUME", "type": "NUMBER"}
-                    ]
-                },
-                {
-                    "name": "SEISMIC_SURVEYS",
-                    "columns": [
-                        {"name": "SURVEY_ID", "type": "NUMBER", "pk": True},
-                        {"name": "SURVEY_NAME", "type": "VARCHAR2(100)"},
-                        {"name": "SURVEY_TYPE", "type": "VARCHAR2(50)"},
-                        {"name": "ACQUISITION_DATE", "type": "DATE"},
-                        {"name": "AREA", "type": "NUMBER"},
-                        {"name": "CONTRACTOR", "type": "VARCHAR2(100)"}
-                    ]
-                },
-                {
-                    "name": "WELL_LOGS",
-                    "columns": [
-                        {"name": "LOG_ID", "type": "NUMBER", "pk": True},
-                        {"name": "WELL_ID", "type": "NUMBER", "fk": "WELLS.WELL_ID"},
-                        {"name": "LOG_TYPE", "type": "VARCHAR2(50)"},
-                        {"name": "LOG_DATE", "type": "DATE"},
-                        {"name": "TOP_DEPTH", "type": "NUMBER"},
-                        {"name": "BOTTOM_DEPTH", "type": "NUMBER"}
-                    ]
-                },
-                {
-                    "name": "MARKERS",
-                    "columns": [
-                        {"name": "MARKER_ID", "type": "NUMBER", "pk": True},
-                        {"name": "WELL_ID", "type": "NUMBER", "fk": "WELLS.WELL_ID"},
-                        {"name": "MARKER_NAME", "type": "VARCHAR2(100)"},
-                        {"name": "DEPTH", "type": "NUMBER"},
-                        {"name": "FORMATION", "type": "VARCHAR2(100)"},
-                        {"name": "INTERPRETER", "type": "VARCHAR2(100)"}
-                    ]
-                }
-            ]
-        }
+        
+        # Base hardcoded tables
+        tables = [
+            {
+                "name": "WELLS",
+                "columns": [
+                    {"name": "WELL_ID", "type": "NUMBER", "pk": True},
+                    {"name": "WELL_NAME", "type": "VARCHAR2(100)", "constraints": "UNIQUE, NOT NULL"},
+                    {"name": "DEPTH", "type": "NUMBER", "constraints": "DEFAULT 0"},
+                    {"name": "STATUS", "type": "VARCHAR2(20)"},
+                    {"name": "LATITUDE", "type": "NUMBER"},
+                    {"name": "LONGITUDE", "type": "NUMBER"},
+                    {"name": "SPUD_DATE", "type": "DATE"},
+                    {"name": "COMPLETION_DATE", "type": "DATE"},
+                    {"name": "FIELD_NAME", "type": "VARCHAR2(100)"},
+                    {"name": "OPERATOR", "type": "VARCHAR2(100)"}
+                ]
+            },
+            {
+                "name": "PRODUCTION",
+                "columns": [
+                    {"name": "PRODUCTION_ID", "type": "NUMBER", "pk": True},
+                    {"name": "WELL_ID", "type": "NUMBER", "fk": "WELLS.WELL_ID"},
+                    {"name": "PRODUCTION_DATE", "type": "DATE"},
+                    {"name": "OIL_VOLUME", "type": "NUMBER"},
+                    {"name": "GAS_VOLUME", "type": "NUMBER"},
+                    {"name": "WATER_VOLUME", "type": "NUMBER"}
+                ]
+            },
+            {
+                "name": "SEISMIC_SURVEYS",
+                "columns": [
+                    {"name": "SURVEY_ID", "type": "NUMBER", "pk": True},
+                    {"name": "SURVEY_NAME", "type": "VARCHAR2(100)"},
+                    {"name": "SURVEY_TYPE", "type": "VARCHAR2(50)"},
+                    {"name": "ACQUISITION_DATE", "type": "DATE"},
+                    {"name": "AREA", "type": "NUMBER"},
+                    {"name": "CONTRACTOR", "type": "VARCHAR2(100)"}
+                ]
+            },
+            {
+                "name": "WELL_LOGS",
+                "columns": [
+                    {"name": "LOG_ID", "type": "NUMBER", "pk": True},
+                    {"name": "WELL_ID", "type": "NUMBER", "fk": "WELLS.WELL_ID"},
+                    {"name": "LOG_TYPE", "type": "VARCHAR2(50)"},
+                    {"name": "LOG_DATE", "type": "DATE"},
+                    {"name": "TOP_DEPTH", "type": "NUMBER"},
+                    {"name": "BOTTOM_DEPTH", "type": "NUMBER"}
+                ]
+            },
+            {
+                "name": "MARKERS",
+                "columns": [
+                    {"name": "MARKER_ID", "type": "NUMBER", "pk": True},
+                    {"name": "WELL_ID", "type": "NUMBER", "fk": "WELLS.WELL_ID"},
+                    {"name": "MARKER_NAME", "type": "VARCHAR2(100)"},
+                    {"name": "DEPTH", "type": "NUMBER"},
+                    {"name": "FORMATION", "type": "VARCHAR2(100)"},
+                    {"name": "INTERPRETER", "type": "VARCHAR2(100)"}
+                ]
+            }
+        ]
+        
+        # Add dynamic tables
+        for table_name, table_info in self.dynamic_tables.items():
+            tables.append({
+                "name": table_name,
+                "columns": table_info["columns"]
+            })
+            
+        return {"tables": tables}
 
     def get_table_data(self, table_name: str) -> List[Dict]:
         """Get data for a specific table."""
+        table_name_upper = table_name.upper()
+        
+        # Check dynamic tables first
+        if table_name_upper in self.dynamic_tables:
+            return self.dynamic_tables[table_name_upper]["data"]
+            
         table_map = {
-            "wells": self.wells,
-            "production": self.production,
-            "seismic_surveys": self.seismic_surveys,
-            "well_logs": self.well_logs,
-            "markers": self.markers
+            "WELLS": self.wells,
+            "PRODUCTION": self.production,
+            "SEISMIC_SURVEYS": self.seismic_surveys,
+            "WELL_LOGS": self.well_logs,
+            "MARKERS": self.markers
         }
-        return table_map.get(table_name.lower(), [])
+        return table_map.get(table_name_upper, [])
 
     def simulate_query(self, sql: str) -> List[Dict]:
         """Simulate query execution without persisting changes (for preview)."""
         # Create a deep copy of data
         original_wells = deepcopy(self.wells)
         original_production = deepcopy(self.production)
+        original_dynamic = deepcopy(self.dynamic_tables)
         
         try:
             # Execute query
-            result = self._execute_sql_internal(sql)
+            result = self.execute_query_internal_logic(sql)
             return result
         finally:
             # Restore original data
             self.wells = original_wells
             self.production = original_production
+            self.dynamic_tables = original_dynamic
 
     def execute_query(self, session_id: str, sql: str) -> List[Dict]:
         """Execute query and persist changes."""
@@ -149,10 +171,23 @@ class EnhancedMockOracleGateway:
         if session_id not in self._pools:
             raise ValueError("No database connection for this session.")
         
-        return self._execute_sql_internal(sql)
+        return self.execute_query_internal_logic(sql)
 
-    def _execute_sql_internal(self, sql: str) -> List[Dict]:
-        """Internal method to execute SQL."""
+    def execute_query_internal_logic(self, sql: str) -> List[Dict]:
+        """
+        Handles execution of one or more SQL statements separated by semicolons.
+        Returns the result of the LAST statement (or combined results if needed, but usually last for display).
+        """
+        statements = [s.strip() for s in sql.split(';') if s.strip()]
+        last_result = []
+        
+        for stmt in statements:
+            last_result = self._execute_single_statement(stmt)
+            
+        return last_result
+
+    def _execute_single_statement(self, sql: str) -> List[Dict]:
+        """Internal method to execute a single SQL statement."""
         # Handle Error Messages returned as SQL
         if sql.startswith("SELECT '") and ("FROM DUAL" in sql.upper() or "Error" in sql):
             msg = sql.split("'")[1]
@@ -160,16 +195,20 @@ class EnhancedMockOracleGateway:
 
         lower_sql = sql.lower()
 
+        # Handle CREATE TABLE
+        if "create table" in lower_sql:
+            return self._handle_create_table(sql, lower_sql)
+
         # Handle UPDATE
-        if "update" in lower_sql and "wells" in lower_sql:
+        if "update" in lower_sql:
             return self._handle_update(sql, lower_sql)
         
         # Handle DELETE
-        if "delete" in lower_sql and "wells" in lower_sql:
+        if "delete" in lower_sql:
             return self._handle_delete(sql, lower_sql)
         
         # Handle INSERT
-        if "insert" in lower_sql and "wells" in lower_sql:
+        if "insert" in lower_sql:
             return self._handle_insert(sql, lower_sql)
         
         # Handle SELECT
@@ -178,9 +217,48 @@ class EnhancedMockOracleGateway:
         
         return []
 
+    def _handle_create_table(self, sql: str, lower_sql: str) -> List[Dict]:
+        """Handle CREATE TABLE operations."""
+        # Parse table name
+        match = re.search(r"create\s+table\s+(\w+)\s*\((.+)\)", sql, re.IGNORECASE | re.DOTALL)
+        if match:
+            table_name = match.group(1).upper()
+            columns_def = match.group(2)
+            
+            columns = []
+            # Simple column parser (splits by comma, assumes name type ...)
+            # This is a mock, so it won't handle complex nested parens perfectly
+            for col_def in columns_def.split(','):
+                parts = col_def.strip().split()
+                if len(parts) >= 2:
+                    col_name = parts[0].upper()
+                    col_type = ' '.join(parts[1:])
+                    columns.append({"name": col_name, "type": col_type})
+            
+            self.dynamic_tables[table_name] = {
+                "columns": columns,
+                "data": []
+            }
+            logger.info(f"[MOCK] Created table {table_name}")
+            return [{"MESSAGE": f"Table {table_name} created successfully."}]
+            
+        return [{"MESSAGE": "Failed to parse CREATE TABLE statement."}]
+
     def _handle_update(self, sql: str, lower_sql: str) -> List[Dict]:
         """Handle UPDATE operations."""
-        set_match = re.search(r"set\s+(.+?)(?:\s+where|$)", lower_sql)
+        # Identify table
+        table_match = re.search(r"update\s+(\w+)", lower_sql)
+        if not table_match:
+            return []
+        table_name = table_match.group(1).upper()
+        
+        data = self.get_table_data(table_name)
+        if not data and table_name not in self.dynamic_tables: # Allow updating empty dynamic tables (though no rows to update)
+             if table_name not in ["WELLS", "PRODUCTION", "SEISMIC_SURVEYS", "WELL_LOGS", "MARKERS"]:
+                 return [{"MESSAGE": f"Table {table_name} not found."}]
+
+        # Use original SQL for SET clause to preserve case
+        set_match = re.search(r"set\s+(.+?)(?:\s+where|$)", sql, re.IGNORECASE)
         if not set_match:
             return []
         
@@ -198,31 +276,57 @@ class EnhancedMockOracleGateway:
         
         # Apply updates
         updated_count = 0
-        for well in self.wells:
-            if self._matches_conditions(well, where_conditions):
+        for row in data:
+            if self._matches_conditions(row, where_conditions):
                 for col, val in updates.items():
-                    if col in well:
-                        well[col] = val
+                    # In dynamic tables, we might need to add columns if they don't exist in the row yet?
+                    # Or assume schema is strict. For mock, let's be flexible.
+                    row[col] = val
                 updated_count += 1
         
-        logger.info(f"[MOCK] Updated {updated_count} wells")
+        logger.info(f"[MOCK] Updated {updated_count} rows in {table_name}")
         return []
 
     def _handle_delete(self, sql: str, lower_sql: str) -> List[Dict]:
         """Handle DELETE operations."""
+        # Identify table
+        table_match = re.search(r"delete\s+from\s+(\w+)", lower_sql)
+        if not table_match:
+            return []
+        table_name = table_match.group(1).upper()
+        
+        data = self.get_table_data(table_name)
+        
         where_conditions = self._parse_where_clause(lower_sql)
         
-        initial_count = len(self.wells)
-        self.wells = [w for w in self.wells if not self._matches_conditions(w, where_conditions)]
-        deleted_count = initial_count - len(self.wells)
+        initial_count = len(data)
+        new_data = [row for row in data if not self._matches_conditions(row, where_conditions)]
         
-        logger.info(f"[MOCK] Deleted {deleted_count} wells")
+        # Update the data source
+        if table_name in self.dynamic_tables:
+            self.dynamic_tables[table_name]["data"] = new_data
+        elif table_name == "WELLS":
+            self.wells = new_data
+        elif table_name == "PRODUCTION":
+            self.production = new_data
+        # ... (other hardcoded tables)
+        
+        deleted_count = initial_count - len(new_data)
+        
+        logger.info(f"[MOCK] Deleted {deleted_count} rows from {table_name}")
         return []
 
     def _handle_insert(self, sql: str, lower_sql: str) -> List[Dict]:
         """Handle INSERT operations."""
-        cols_match = re.search(r"insert\s+into\s+wells\s*\(([^)]+)\)", lower_sql)
-        vals_match = re.search(r"values\s*\(([^)]+)\)", lower_sql)
+        # Identify table
+        table_match = re.search(r"insert\s+into\s+(\w+)", lower_sql)
+        if not table_match:
+            return []
+        table_name = table_match.group(1).upper()
+        
+        # Use original SQL for VALUES to preserve case
+        cols_match = re.search(r"\(([^)]+)\)\s*values", sql, re.IGNORECASE)
+        vals_match = re.search(r"values\s*\(([^)]+)\)", sql, re.IGNORECASE)
         
         if cols_match and vals_match:
             cols = [c.strip().upper() for c in cols_match.group(1).split(',')]
@@ -233,17 +337,28 @@ class EnhancedMockOracleGateway:
             for match in re.finditer(r"'([^']*)'|(\d+)", vals_str):
                 vals.append(match.group(1) if match.group(1) is not None else int(match.group(2)))
             
-            # Create new well record
-            new_well = {}
+            # Create new record
+            new_record = {}
             for col, val in zip(cols, vals):
-                new_well[col] = val
+                new_record[col] = val
             
-            # Auto-generate WELL_ID if not provided
-            if "WELL_ID" not in new_well:
-                new_well["WELL_ID"] = max([w["WELL_ID"] for w in self.wells], default=0) + 1
+            # Auto-generate ID if needed (simple heuristic)
+            id_col = f"{table_name[:-1]}_ID" if table_name.endswith('S') else f"{table_name}_ID"
+            if id_col not in new_record:
+                data = self.get_table_data(table_name)
+                current_max = max([row.get(id_col, 0) for row in data], default=0) if data else 0
+                new_record[id_col] = current_max + 1
             
-            self.wells.append(new_well)
-            logger.info(f"[MOCK] Inserted new well: {new_well}")
+            # Append to correct table
+            if table_name in self.dynamic_tables:
+                self.dynamic_tables[table_name]["data"].append(new_record)
+            elif table_name == "WELLS":
+                self.wells.append(new_record)
+            elif table_name == "PRODUCTION":
+                self.production.append(new_record)
+            # ... others
+            
+            logger.info(f"[MOCK] Inserted into {table_name}: {new_record}")
         
         return []
 
@@ -268,12 +383,12 @@ class EnhancedMockOracleGateway:
     def _handle_count(self, sql: str, lower_sql: str) -> List[Dict]:
         """Handle COUNT queries."""
         # Determine table
-        if "wells" in lower_sql:
-            data = self.wells
-        elif "production" in lower_sql:
-            data = self.production
-        else:
-            return [{"COUNT(*)": 0}]
+        match = re.search(r"from\s+(\w+)", lower_sql)
+        if not match:
+             return [{"COUNT(*)": 0}]
+        
+        table_name = match.group(1).upper()
+        data = self.get_table_data(table_name)
         
         # Apply WHERE conditions
         where_conditions = self._parse_where_clause(lower_sql)
@@ -292,10 +407,15 @@ class EnhancedMockOracleGateway:
         agg_func = agg_match.group(1).upper()
         agg_col = agg_match.group(2).upper()
         
+        # Determine table
+        match = re.search(r"from\s+(\w+)", lower_sql)
+        if not match:
+             return []
+        table_name = match.group(1).upper()
+        data = self.get_table_data(table_name)
+        
         # Check for GROUP BY
         group_by_match = re.search(r"group\s+by\s+(\w+)", lower_sql)
-        
-        data = self.wells  # Assume wells for now
         
         if group_by_match:
             # Group by column
@@ -362,18 +482,12 @@ class EnhancedMockOracleGateway:
     def _handle_simple_select(self, sql: str, lower_sql: str) -> List[Dict]:
         """Handle simple SELECT queries."""
         # Determine table
-        if "wells" in lower_sql:
-            data = self.wells
-        elif "production" in lower_sql:
-            data = self.production
-        elif "seismic_surveys" in lower_sql:
-            data = self.seismic_surveys
-        elif "well_logs" in lower_sql:
-            data = self.well_logs
-        elif "markers" in lower_sql:
-            data = self.markers
-        else:
-            return [{"MOCK_COL_1": "Value 1", "MOCK_COL_2": "Value 2"}]
+        match = re.search(r"from\s+(\w+)", lower_sql)
+        if not match:
+             return [{"MOCK_COL_1": "Value 1", "MOCK_COL_2": "Value 2"}]
+        
+        table_name = match.group(1).upper()
+        data = self.get_table_data(table_name)
         
         # Apply WHERE conditions
         where_conditions = self._parse_where_clause(lower_sql)
@@ -404,7 +518,8 @@ class EnhancedMockOracleGateway:
             })
         
         # Handle = (equality)
-        eq_matches = re.finditer(r"(\w+)\s*=\s*(?:'([^']*)'|(\d+))", where_clause)
+        # Support UPPER(col) or LOWER(col)
+        eq_matches = re.finditer(r"(?:UPPER\(|LOWER\()?\s*(\w+)\s*(?:\))?\s*=\s*(?:'([^']*)'|(\d+))", where_clause, re.IGNORECASE)
         for match in eq_matches:
             if "like" not in where_clause[max(0, match.start()-10):match.start()].lower():
                 conditions.append({
